@@ -1,0 +1,106 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "me.champeau.gradle:jmh-gradle-plugin:0.4.5"
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'checkstyle'
+apply plugin: 'pmd'
+apply plugin: 'findbugs'
+apply plugin: 'jacoco'
+apply plugin: "me.champeau.gradle.jmh"
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+//-----------------------------BASE CONFIGURATION--------------------------------------------
+checkstyle {
+    checkstyleTest.enabled = false
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.75
+            }
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.1'
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
+findbugs {
+    ignoreFailures=true
+    findbugsTest.enabled=false
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+pmd {
+    ignoreFailures = true
+    pmdTest.enabled=false
+    ruleSets = [
+            'java-basic',
+            'java-braces',
+            'java-clone',
+            'java-codesize',
+            'java-comments',
+            'java-controversial',
+            'java-coupling',
+            'java-design',
+            'java-empty',
+            'java-finalizers',
+            'java-imports',
+            'java-optimizations',
+            'java-strictexception',
+            'java-strings',
+            'java-typeresolution',
+            'java-unnecessary',
+            'java-unusedcode'
+    ]
+}
+
+jmhJar.doFirst {
+    delete "${projectDir}/build/jmh-generated-classes"
+}
+
+jmh {
+    iterations = 5
+    benchmarkMode = ['avgt']
+    fork = 1
+    warmupIterations = 3
+}
+
+tasks.withType(Pmd) {
+    reports{
+        xml.enabled=true
+        html.enabled=true
+    }
+}
+//----------------------------------------------------------------------------------------------
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    jmh 'org.openjdk.jmh:jmh-core:1.19'
+    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.19'
+}
